@@ -6,49 +6,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-# Temel dizin (app.py dosyanın bulunduğu klasör)
-BASE_DIR = os.path.dirname(__file__)
+# Temel dizini al (Streamlit Cloud'da __file__ yoksa burayı boş bırakabilirsin)
+try:
+    BASE_DIR = os.path.dirname(__file__)
+except NameError:
+    BASE_DIR = ''
 
-# -- Stil (CSS) ile arka plan ve genel tema --
-page_bg_img = '''
-<style>
-body {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-.stButton>button {
-    background-color: #6c5ce7;
-    color: white;
-    border-radius: 8px;
-    height: 40px;
-    width: 100%;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-.stButton>button:hover {
-    background-color: #341f97;
-    color: #dfe6e9;
-    cursor: pointer;
-}
-.stSidebar {
-    background: #2d3436;
-    color: white;
-}
-h1, h2, h3 {
-    font-weight: 700;
-}
-</style>
-'''
-st.markdown(page_bg_img, unsafe_allow_html=True)
-
-st.title("🛡️ German Credit Risk Tahmin Uygulaması")
-st.markdown("""
-Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilen **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
-""")
-
-# -- Dosyaları cache ile yükle --
-@st.cache_resource
+# Dosyaları yükle
 def load_artifacts():
     model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
     scaler = joblib.load(os.path.join(BASE_DIR, 'scaler.pkl'))
@@ -62,7 +26,43 @@ def load_artifacts():
 
 model, scaler, le_sex, le_housing, le_saving, le_checking, le_purpose, feature_cols = load_artifacts()
 
-# -- Sidebar girişler --
+# Stil (background, butonlar vs)
+st.markdown("""
+<style>
+body {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.stButton>button {
+    background-color: #6c5ce7;
+    color: white;
+    border-radius: 8px;
+    height: 40px;
+    width: 100%;
+    font-weight: bold;
+}
+.stButton>button:hover {
+    background-color: #341f97;
+    color: #dfe6e9;
+}
+.stSidebar {
+    background: #2d3436;
+    color: white;
+}
+h1, h2, h3 {
+    font-weight: 700;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Başlık
+st.title("🛡️ German Credit Risk Tahmin Uygulaması")
+st.markdown("""
+Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilen **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
+""")
+
+# Sidebar inputları
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
 age = st.sidebar.number_input('Yaş', min_value=18, max_value=100, value=30)
@@ -75,14 +75,14 @@ saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classe
 checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
 purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
 
-# -- Encode --
+# Encode et
 sex_encoded = le_sex.transform([sex_label])[0]
 housing_encoded = le_housing.transform([housing_label])[0]
 saving_encoded = le_saving.transform([saving_label])[0]
 checking_encoded = le_checking.transform([checking_label])[0]
 purpose_encoded = le_purpose.transform([purpose_label])[0]
 
-# -- Tahmin butonu --
+# Tahmin butonu
 if st.sidebar.button('Tahmin Et'):
     input_dict = {
         'Age': age,
@@ -96,7 +96,7 @@ if st.sidebar.button('Tahmin Et'):
     }
     input_df = pd.DataFrame([input_dict])
 
-    # Ölçeklendirme
+    # Ölçekle
     input_df[['Age', 'Credit amount', 'Duration']] = scaler.transform(input_df[['Age', 'Credit amount', 'Duration']])
 
     # Tahmin
@@ -107,9 +107,9 @@ if st.sidebar.button('Tahmin Et'):
     st.markdown(f"### Tahmin Sonucu: {risk_map[pred]}")
     st.write(f"Model Güven Skoru: **{proba:.2f}**")
 
-    # Demo performans metrikleri (Gerçek test setiyle değiştir)
+    # Örnek performans metrikleri
     st.markdown("---")
-    st.subheader("Model Performans Metrikleri ve Grafikler")
+    st.subheader("Model Performans Metrikleri")
 
     accuracy = 0.82
     precision = 0.74
@@ -123,7 +123,7 @@ if st.sidebar.button('Tahmin Et'):
     **F1-Score:** {f1:.2f}
     """)
 
-    # Confusion matrix (örnek)
+    # Confusion matrix
     cm = np.array([[80, 15],
                    [10, 25]])
     fig, ax = plt.subplots(figsize=(5, 4))
@@ -133,7 +133,7 @@ if st.sidebar.button('Tahmin Et'):
     ax.set_title('Confusion Matrix')
     st.pyplot(fig)
 
-    # Feature importance grafiği
+    # Feature importance
     importances = model.feature_importances_
     feat_imp_df = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values(by='Importance', ascending=False)
 
@@ -142,13 +142,13 @@ if st.sidebar.button('Tahmin Et'):
     ax2.set_title('Feature Importance (Özelliklerin Modeldeki Önemi)')
     st.pyplot(fig2)
 
-# -- Ek bilgi --
+# Veri seti ve model hakkında bilgi
 with st.expander("ℹ️ Veri Seti ve Model Hakkında"):
     st.markdown("""
-    - Veri seti, Almanya’daki kredi başvurularına ait finansal ve demografik bilgileri içerir.
-    - Model, Random Forest algoritması ile SMOTE yöntemi kullanılarak dengelenmiş veri üzerinde eğitildi.
-    - Modelin amacı, bireyin kredi riskini önceden tahmin etmektir.
-    - Performans metrikleri ve grafiklerle modelin doğruluğu ve güvenilirliği sunulmaktadır.
+    - Veri seti Almanya'daki kredi başvurularının finansal ve demografik bilgilerini içerir.
+    - Model Random Forest algoritması ile SMOTE yöntemi kullanılarak dengelenmiş veri üzerinde eğitildi.
+    - Amaç bireyin kredi riskini önceden tahmin etmektir.
+    - Performans metrikleri ve grafiklerle modelin doğruluğu ve güvenilirliği gösterilmektedir.
     """)
 
 st.markdown("---")
