@@ -4,20 +4,10 @@ import numpy as np
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
 import os
-import joblib
 
+# Temel dizin (app.py dosyanın bulunduğu klasör)
 BASE_DIR = os.path.dirname(__file__)
-
-model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
-scaler = joblib.load(os.path.join(BASE_DIR, 'scaler.pkl'))
-le_sex = joblib.load(os.path.join(BASE_DIR, 'le_sex.pkl'))
-le_housing = joblib.load(os.path.join(BASE_DIR, 'le_housing.pkl'))
-le_saving = joblib.load(os.path.join(BASE_DIR, 'le_saving.pkl'))
-le_checking = joblib.load(os.path.join(BASE_DIR, 'le_checking.pkl'))
-le_purpose = joblib.load(os.path.join(BASE_DIR, 'le_purpose.pkl'))
-feature_cols = joblib.load(os.path.join(BASE_DIR, 'feature_cols.pkl'))
 
 # -- Stil (CSS) ile arka plan ve genel tema --
 page_bg_img = '''
@@ -34,10 +24,12 @@ body {
     height: 40px;
     width: 100%;
     font-weight: bold;
+    transition: background-color 0.3s ease;
 }
 .stButton>button:hover {
     background-color: #341f97;
     color: #dfe6e9;
+    cursor: pointer;
 }
 .stSidebar {
     background: #2d3436;
@@ -50,30 +42,27 @@ h1, h2, h3 {
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# -- Başlık ve alt başlık --
 st.title("🛡️ German Credit Risk Tahmin Uygulaması")
 st.markdown("""
 Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilen **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
 """)
 
-
-# -- Model ve dosyaları yükle --
+# -- Dosyaları cache ile yükle --
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load('rf_model_smote.pkl')
-    scaler = joblib.load('scaler.pkl')
-    le_sex = joblib.load('le_sex.pkl')
-    le_housing = joblib.load('le_housing.pkl')
-    le_saving = joblib.load('le_saving.pkl')
-    le_checking = joblib.load('le_checking.pkl')
-    le_purpose = joblib.load('le_purpose.pkl')
-    feature_cols = joblib.load('feature_cols.pkl')
+    model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
+    scaler = joblib.load(os.path.join(BASE_DIR, 'scaler.pkl'))
+    le_sex = joblib.load(os.path.join(BASE_DIR, 'le_sex.pkl'))
+    le_housing = joblib.load(os.path.join(BASE_DIR, 'le_housing.pkl'))
+    le_saving = joblib.load(os.path.join(BASE_DIR, 'le_saving.pkl'))
+    le_checking = joblib.load(os.path.join(BASE_DIR, 'le_checking.pkl'))
+    le_purpose = joblib.load(os.path.join(BASE_DIR, 'le_purpose.pkl'))
+    feature_cols = joblib.load(os.path.join(BASE_DIR, 'feature_cols.pkl'))
     return model, scaler, le_sex, le_housing, le_saving, le_checking, le_purpose, feature_cols
-
 
 model, scaler, le_sex, le_housing, le_saving, le_checking, le_purpose, feature_cols = load_artifacts()
 
-# -- Sidebar ile inputlar --
+# -- Sidebar girişler --
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
 age = st.sidebar.number_input('Yaş', min_value=18, max_value=100, value=30)
@@ -86,7 +75,7 @@ saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classe
 checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
 purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
 
-# -- Kodda kullanmak için encode et --
+# -- Encode --
 sex_encoded = le_sex.transform([sex_label])[0]
 housing_encoded = le_housing.transform([housing_label])[0]
 saving_encoded = le_saving.transform([saving_label])[0]
@@ -107,7 +96,7 @@ if st.sidebar.button('Tahmin Et'):
     }
     input_df = pd.DataFrame([input_dict])
 
-    # Ölçeklendir
+    # Ölçeklendirme
     input_df[['Age', 'Credit amount', 'Duration']] = scaler.transform(input_df[['Age', 'Credit amount', 'Duration']])
 
     # Tahmin
@@ -118,13 +107,10 @@ if st.sidebar.button('Tahmin Et'):
     st.markdown(f"### Tahmin Sonucu: {risk_map[pred]}")
     st.write(f"Model Güven Skoru: **{proba:.2f}**")
 
-    # Model performans ve grafikler için demo amaçlı test verisi kullan (burada kendi X_test ve y_test varsa onu kullan)
-    # Demo olarak orijinal test setinden örnek alabiliriz veya burada sabit grafik koyabiliriz.
-    # Burada örnek olarak modelin performans grafiği:
+    # Demo performans metrikleri (Gerçek test setiyle değiştir)
     st.markdown("---")
     st.subheader("Model Performans Metrikleri ve Grafikler")
 
-    # Örnek metrikler (bunları gerçek test setiyle doldur)
     accuracy = 0.82
     precision = 0.74
     recall = 0.68
@@ -137,7 +123,7 @@ if st.sidebar.button('Tahmin Et'):
     **F1-Score:** {f1:.2f}
     """)
 
-    # Confusion matrix örneği (örnek, kendi verinle değiştir)
+    # Confusion matrix (örnek)
     cm = np.array([[80, 15],
                    [10, 25]])
     fig, ax = plt.subplots(figsize=(5, 4))
@@ -147,17 +133,16 @@ if st.sidebar.button('Tahmin Et'):
     ax.set_title('Confusion Matrix')
     st.pyplot(fig)
 
-    # Feature importance örneği (gerçek feature importance ile değiştir)
+    # Feature importance grafiği
     importances = model.feature_importances_
-    feat_imp_df = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values(by='Importance',
-                                                                                                 ascending=False)
+    feat_imp_df = pd.DataFrame({'Feature': feature_cols, 'Importance': importances}).sort_values(by='Importance', ascending=False)
 
     fig2, ax2 = plt.subplots(figsize=(8, 4))
     sns.barplot(x='Importance', y='Feature', data=feat_imp_df, palette='viridis', ax=ax2)
     ax2.set_title('Feature Importance (Özelliklerin Modeldeki Önemi)')
     st.pyplot(fig2)
 
-# -- Bilgi bölümü --
+# -- Ek bilgi --
 with st.expander("ℹ️ Veri Seti ve Model Hakkında"):
     st.markdown("""
     - Veri seti, Almanya’daki kredi başvurularına ait finansal ve demografik bilgileri içerir.
