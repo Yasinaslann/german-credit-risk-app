@@ -5,6 +5,19 @@ import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report
+import os
+import joblib
+
+BASE_DIR = os.path.dirname(__file__)
+
+model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
+scaler = joblib.load(os.path.join(BASE_DIR, 'scaler.pkl'))
+le_sex = joblib.load(os.path.join(BASE_DIR, 'le_sex.pkl'))
+le_housing = joblib.load(os.path.join(BASE_DIR, 'le_housing.pkl'))
+le_saving = joblib.load(os.path.join(BASE_DIR, 'le_saving.pkl'))
+le_checking = joblib.load(os.path.join(BASE_DIR, 'le_checking.pkl'))
+le_purpose = joblib.load(os.path.join(BASE_DIR, 'le_purpose.pkl'))
+feature_cols = joblib.load(os.path.join(BASE_DIR, 'feature_cols.pkl'))
 
 # -- Stil (CSS) ile arka plan ve genel tema --
 page_bg_img = '''
