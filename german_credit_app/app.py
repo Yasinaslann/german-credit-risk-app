@@ -9,7 +9,7 @@ import os
 # Sayfa ayarları
 st.set_page_config(page_title="German Credit Risk Tahmin", layout="wide", page_icon="🛡️")
 
-# Stil (CSS) - arka plan ve genel tema + küçük açıklama metinleri için
+# Stil (CSS) - arka plan ve genel tema
 page_bg_img = '''
 <style>
 body {
@@ -38,24 +38,14 @@ body {
 h1, h2, h3 {
     font-weight: 700;
 }
-.small-text {
-    font-size: 12px;
-    color: #dfe6e9;
-    margin-top: -12px;
-    margin-bottom: 10px;
-    font-style: italic;
-}
 </style>
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# Logo gösterimi (github’dan link verdim, kendi logo dosyan varsa path ile değiştir)
-st.sidebar.image("https://raw.githubusercontent.com/yasinaslann/german-credit-risk-app/main/logo.png", width=150)
-
-# Dosya yolları
+# Dosya yolları (Streamlit Cloud ve local uyumlu)
 BASE_DIR = os.path.dirname(__file__)
 
-# Model ve encoder yükleme
+# Model ve encoders yükleme fonksiyonu
 @st.cache_resource
 def load_artifacts():
     model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
@@ -70,7 +60,7 @@ def load_artifacts():
 
 model, scaler, le_sex, le_housing, le_saving, le_checking, le_purpose, feature_cols = load_artifacts()
 
-# Veri yükleme
+# Veri seti yükleme (EDA için)
 @st.cache_data
 def load_data():
     df = pd.read_csv(os.path.join(BASE_DIR, 'german_credit_data.csv'))
@@ -84,32 +74,32 @@ st.markdown("""
 Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilmiş **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
 """)
 
-# Sidebar inputlar ve açıklamaları
+# Sidebar inputlar
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
 age = st.sidebar.slider('Yaş', 18, 100, 30)
-st.sidebar.markdown('<div class="small-text">Başvuru sahibinin yaşı. Genç veya yaşlı olması kredi riskini etkileyebilir.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Başvuran kişinin yaşı kredi geri ödeme riskini etkileyebilir.")
 
 credit_amount = st.sidebar.slider('Kredi Miktarı (€)', 100, 1000000, 1000, step=100)
-st.sidebar.markdown('<div class="small-text">Talep edilen kredi miktarı. Daha yüksek tutarlar risk oluşturabilir.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Talep edilen kredi miktarı arttıkça risk de artabilir.")
 
 duration = st.sidebar.slider('Kredi Süresi (ay)', 1, 100, 12)
-st.sidebar.markdown('<div class="small-text">Kredinin geri ödeme süresi. Uzun vadeler genellikle daha yüksek risk taşır.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Kredi geri ödeme süresi, uzun olduğunda risk yükselebilir.")
 
 sex_label = st.sidebar.selectbox('Cinsiyet', options=le_sex.classes_)
-st.sidebar.markdown('<div class="small-text">Başvuru sahibinin cinsiyeti.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Cinsiyet bazlı finansal davranış farklılıkları modelde kullanılmıştır.")
 
 housing_label = st.sidebar.selectbox('Konut Durumu', options=le_housing.classes_)
-st.sidebar.markdown('<div class="small-text">Başvuru sahibinin konut durumu (kira, ev sahibi vb.).</div>', unsafe_allow_html=True)
+st.sidebar.caption("Konut durumu kişinin finansal durumunu etkileyebilir.")
 
 saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classes_)
-st.sidebar.markdown('<div class="small-text">Tasarruf hesabının durumu, finansal güvenlik göstergesi.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Tasarruf hesap durumu mali güvenliği gösterir.")
 
 checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
-st.sidebar.markdown('<div class="small-text">Vadesiz hesap durumu, nakit akışı hakkında bilgi verir.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Vadesiz hesap durumu nakit akışının göstergesidir.")
 
 purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
-st.sidebar.markdown('<div class="small-text">Kredi kullanım amacı, risk değerlendirmesinde etkili olabilir.</div>', unsafe_allow_html=True)
+st.sidebar.caption("Kredi kullanım amacı risk tahmininde önemlidir.")
 
 # Encode et
 sex_encoded = le_sex.transform([sex_label])[0]
@@ -143,20 +133,36 @@ if st.sidebar.button('Tahmin Et'):
     st.markdown(f"### Tahmin Sonucu: {risk_map[pred]}")
     st.write(f"Model Güven Skoru: **{proba:.2f}**")
 
-# Veri Seti Hakkında Bilgi ve Label tanımı
-with st.expander("📚 Veri Seti Hakkında Bilgi ve Label Tanımı", expanded=False):
-    st.markdown("""
-    **Veri Seti Hikayesi:**  
-    Almanya'daki bireylerin finansal ve demografik bilgilerini içeren bu veri seti, kredi başvurularının riskini tahmin etmek amacıyla toplanmıştır.  
-    Kredi veren kurumlar, başvuranın geri ödemede sorun yaşayıp yaşamayacağını önceden değerlendirmek için bu tür modelleri kullanır.  
+    # Olası Sebepler ve Açıklamalar
+    st.markdown("#### Tahmine Etki Edebilecek Olası Sebepler ve Açıklamalar")
+    explanations = []
+    if pred == 1:  # Bad Risk için olası sebepler
+        if credit_amount > 5000:
+            explanations.append("- Kredi miktarınız yüksek, bu geri ödeme riskini artırabilir.")
+        if duration > 24:
+            explanations.append("- Kredi süreniz uzun, ödeme zorluğu yaşama ihtimali artar.")
+        if saving_label in ['little', 'none']:
+            explanations.append("- Tasarruf hesabınız düşük ya da yok, mali güvenlik düşük.")
+        if checking_label in ['little', 'none']:
+            explanations.append("- Vadesiz hesabınızın durumu zayıf, nakit akışı sorunlu olabilir.")
+        if housing_label == 'for free':
+            explanations.append("- Konut durumunuz 'ücretsiz' olarak gözüküyor, ekonomik istikrar düşük olabilir.")
+    else:
+        explanations.append("- Kredi miktarınız ve süreniz makul, finansal durumunuz stabil görünüyor.")
+        explanations.append("- Tasarruf ve vadesiz hesaplarınız yeterli seviyede.")
+    
+    for e in explanations:
+        st.write(e)
 
-    **Label (Hedef) Değişken:**  
-    - **0**: İyi Risk (Good Risk) - Krediyi geri ödeyen müşteriler  
-    - **1**: Kötü Risk (Bad Risk) - Krediyi geri ödemede problem yaşayanlar  
-
-    **Model Tahmin Olasılığı:**  
-    Model, her tahmin için 0 ile 1 arasında bir güven skoru verir. Bu skor, tahminin ne kadar sağlam olduğunu gösterir.
-    """)
+    # Özellik önem sırası grafiği
+    st.markdown("---")
+    st.subheader("Özelliklerin Modeldeki Önemi")
+    importances = model.feature_importances_
+    feat_imp_df = pd.DataFrame({'Özellik': feature_cols, 'Önem': importances}).sort_values(by='Önem', ascending=False)
+    fig2, ax2 = plt.subplots(figsize=(8, 5))
+    sns.barplot(x='Önem', y='Özellik', data=feat_imp_df, palette='viridis', ax=ax2)
+    ax2.set_title('Özellik Önem Sıralaması')
+    st.pyplot(fig2)
 
 # Veri Keşfi (EDA) bölümü
 with st.expander("📊 Veri Seti Keşfi ve İstatistikler", expanded=True):
