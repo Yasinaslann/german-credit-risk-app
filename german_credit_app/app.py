@@ -7,7 +7,11 @@ import seaborn as sns
 import os
 
 # Sayfa ayarları
-st.set_page_config(page_title="German Credit Risk Tahmin", layout="wide", page_icon="🛡️")
+st.set_page_config(
+    page_title="Kredi Risk Analizi",
+    layout="wide",
+    page_icon="💳"  # Kredi kartı simgesi, krediyle bağlantılı
+)
 
 # Stil (CSS) - arka plan ve genel tema
 page_bg_img = '''
@@ -69,37 +73,59 @@ def load_data():
 df = load_data()
 
 # Başlık
-st.title("🛡️ German Credit Risk Tahmin Uygulaması")
+st.title("💳 Kredi Risk Analizi")
 st.markdown("""
 Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilmiş **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
 """)
+
+# Veri seti hikayesi ve label açıklamaları
+with st.expander("📚 Veri Seti ve Etiketler Hakkında Bilgi", expanded=True):
+    st.markdown("""
+    Almanya'dan alınan kredi başvuru verileri kullanılmıştır. Veri setinde finansal ve demografik özellikler yer alır ve her başvuruya 'Good Risk' (iyi) veya 'Bad Risk' (kötü) etiketi atanmıştır.
+
+    **Veri setindeki önemli sütunlar:**
+    - **Age (Yaş):** Başvuranın yaşı.
+    - **Credit amount (Kredi Miktarı):** Talep edilen kredi miktarı (€).
+    - **Duration (Süre):** Kredi geri ödeme süresi (ay).
+    - **Sex (Cinsiyet):** Başvuranın cinsiyeti.
+    - **Housing (Konut Durumu):** Kişinin konut durumu (kira, sahibi vs.).
+    - **Saving accounts (Tasarruf Hesabı):** Tasarruf hesabı durumu.
+    - **Checking account (Vadesiz Hesap):** Vadesiz hesap durumu.
+    - **Purpose (Kredi Amacı):** Kredi kullanma amacı.
+
+    **Etiketler:**
+    - **Good Risk:** Kredi geri ödemede düşük risk.
+    - **Bad Risk:** Kredi geri ödemede yüksek risk.
+
+    Bu özellikler kullanılarak Random Forest algoritması ile kredi risk tahmini yapılmaktadır.
+    """)
 
 # Sidebar inputlar
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
 age = st.sidebar.slider('Yaş', 18, 100, 30)
-st.sidebar.caption("Başvuran kişinin yaşı kredi geri ödeme riskini etkileyebilir.")
+st.sidebar.caption("Başvuran kişinin yaşı kredi riskini etkiler. Çok genç veya çok yaşlı başvurular riskli olabilir.")
 
 credit_amount = st.sidebar.slider('Kredi Miktarı (€)', 100, 1000000, 1000, step=100)
-st.sidebar.caption("Talep edilen kredi miktarı arttıkça risk de artabilir.")
+st.sidebar.caption("Talep edilen kredi miktarı yükseldikçe risk artabilir.")
 
 duration = st.sidebar.slider('Kredi Süresi (ay)', 1, 100, 12)
-st.sidebar.caption("Kredi geri ödeme süresi, uzun olduğunda risk yükselebilir.")
+st.sidebar.caption("Daha uzun geri ödeme süreleri risk faktörüdür.")
 
 sex_label = st.sidebar.selectbox('Cinsiyet', options=le_sex.classes_)
-st.sidebar.caption("Cinsiyet bazlı finansal davranış farklılıkları modelde kullanılmıştır.")
+st.sidebar.caption("Farklı cinsiyetlerin finansal davranışları modele dahil edilmiştir.")
 
 housing_label = st.sidebar.selectbox('Konut Durumu', options=le_housing.classes_)
-st.sidebar.caption("Konut durumu kişinin finansal durumunu etkileyebilir.")
+st.sidebar.caption("Konut durumu, ekonomik istikrar hakkında bilgi verir.")
 
 saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classes_)
-st.sidebar.caption("Tasarruf hesap durumu mali güvenliği gösterir.")
+st.sidebar.caption("Tasarruf hesabı durumu, mali güvenliği yansıtır.")
 
 checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
-st.sidebar.caption("Vadesiz hesap durumu nakit akışının göstergesidir.")
+st.sidebar.caption("Vadesiz hesap durumu, nakit akışı göstergesidir.")
 
 purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
-st.sidebar.caption("Kredi kullanım amacı risk tahmininde önemlidir.")
+st.sidebar.caption("Kredi başvurusunun amacı risk değerlendirmesinde önemlidir.")
 
 # Encode et
 sex_encoded = le_sex.transform([sex_label])[0]
