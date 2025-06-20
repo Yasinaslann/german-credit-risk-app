@@ -42,11 +42,16 @@ h1, h2, h3 {
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
+# Logo gösterimi - 2 seçenek:
+
+# 1) Eğer logo dosyan varsa burayı aç (logo.png dosyasını projeye koymalısın)
+# st.sidebar.image("logo.png", width=150)
+
+# 2) Ya da internetten logo URL ile göster
+st.sidebar.image("https://raw.githubusercontent.com/yasinaslann/german-credit-risk-app/main/logo.png", width=150)
+
 # Dosya yolları (Streamlit Cloud ve local uyumlu)
 BASE_DIR = os.path.dirname(__file__)
-
-# Logo ekleme (local dosya olarak: logo.png - yoksa URL koyabilirsin)
-st.sidebar.image("logo.png", width=150)
 
 # Model ve encoders yükleme fonksiyonu
 @st.cache_resource
@@ -81,28 +86,14 @@ Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilmiş **Random Fore
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
 age = st.sidebar.slider('Yaş', 18, 100, 30)
-st.sidebar.caption("Kredi alacak kişinin yaşı, risk değerlendirmesinde önemli.")
-
 credit_amount = st.sidebar.slider('Kredi Miktarı (€)', 100, 1000000, 1000, step=100)
-st.sidebar.caption("Talep edilen kredi miktarı.")
-
 duration = st.sidebar.slider('Kredi Süresi (ay)', 1, 100, 12)
-st.sidebar.caption("Kredi geri ödeme süresi (ay olarak).")
 
 sex_label = st.sidebar.selectbox('Cinsiyet', options=le_sex.classes_)
-st.sidebar.caption("Başvuran kişinin cinsiyeti.")
-
 housing_label = st.sidebar.selectbox('Konut Durumu', options=le_housing.classes_)
-st.sidebar.caption("Başvuran kişinin konut durumu (kendi evi, kira, vb.).")
-
 saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classes_)
-st.sidebar.caption("Tasarruf hesap durumu kredi riskini etkiler.")
-
 checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
-st.sidebar.caption("Vadesiz hesap durumu, finansal stabilite göstergesi.")
-
 purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
-st.sidebar.caption("Kredinin kullanım amacı.")
 
 # Encode et
 sex_encoded = le_sex.transform([sex_label])[0]
@@ -146,21 +137,16 @@ with st.expander("📊 Veri Seti Keşfi ve İstatistikler", expanded=True):
         sns.histplot(df['Age'], kde=True, color='#6c5ce7', ax=ax)
         ax.set_title("Yaş Dağılımı")
         st.pyplot(fig)
-        st.markdown("**Yaş dağılımı**: Kredi başvurusu yapan bireylerin yaş aralıkları.")
-
     with col2:
         fig, ax = plt.subplots()
         sns.histplot(df['Credit amount'], kde=True, color='#6c5ce7', ax=ax)
         ax.set_title("Kredi Miktarı Dağılımı")
         st.pyplot(fig)
-        st.markdown("**Kredi miktarı dağılımı**: Talep edilen kredi miktarlarının dağılımı.")
-
     with col3:
         fig, ax = plt.subplots()
         sns.histplot(df['Duration'], kde=True, color='#6c5ce7', ax=ax)
         ax.set_title("Kredi Süresi Dağılımı")
         st.pyplot(fig)
-        st.markdown("**Kredi süresi dağılımı**: Kredilerin geri ödeme sürelerinin dağılımı.")
 
     st.markdown("### Kategorik Değişkenlerin Dağılımı")
     cat_cols = ['Sex', 'Housing', 'Saving accounts', 'Checking account', 'Purpose']
@@ -170,7 +156,6 @@ with st.expander("📊 Veri Seti Keşfi ve İstatistikler", expanded=True):
         ax.set_ylabel('')
         ax.set_title(f"{col} Dağılımı")
         st.pyplot(fig)
-        st.markdown(f"**{col} değişkeni**, kredi risk analizinde önemli bir faktördür.")
 
 # Footer
 st.markdown("---")
