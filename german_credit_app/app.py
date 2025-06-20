@@ -6,10 +6,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-# Sayfa ayarları
 st.set_page_config(page_title="German Credit Risk Tahmin", layout="wide", page_icon="🛡️")
 
-# Stil (CSS) - arka plan ve genel tema
 page_bg_img = '''
 <style>
 body {
@@ -42,10 +40,8 @@ h1, h2, h3 {
 '''
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
-# Dosya yolları (Streamlit Cloud ve local uyumlu)
 BASE_DIR = os.path.dirname(__file__)
 
-# Model ve encoders yükleme fonksiyonu
 @st.cache_resource
 def load_artifacts():
     model = joblib.load(os.path.join(BASE_DIR, 'rf_model_smote.pkl'))
@@ -60,7 +56,6 @@ def load_artifacts():
 
 model, scaler, le_sex, le_housing, le_saving, le_checking, le_purpose, feature_cols = load_artifacts()
 
-# Veri seti yükleme (EDA için)
 @st.cache_data
 def load_data():
     df = pd.read_csv(os.path.join(BASE_DIR, 'german_credit_data.csv'))
@@ -68,33 +63,30 @@ def load_data():
 
 df = load_data()
 
-# Başlık
 st.title("🛡️ German Credit Risk Tahmin Uygulaması")
 st.markdown("""
 Bu uygulama, Almanya kredi veri seti kullanılarak geliştirilmiş **Random Forest** modeli ile bireylerin kredi riskini tahmin eder.
 """)
 
-# Sidebar inputlar
+# Sidebar inputs with help text
 st.sidebar.header("Kredi Başvuru Bilgileri")
 
-age = st.sidebar.slider('Yaş', 18, 100, 30)
-credit_amount = st.sidebar.slider('Kredi Miktarı (€)', 100, 1000000, 1000, step=100)
-duration = st.sidebar.slider('Kredi Süresi (ay)', 1, 100, 12)
+age = st.sidebar.slider('Yaş', 18, 100, 30, help="Kredi başvuru sahibinin yaşı")
+credit_amount = st.sidebar.slider('Kredi Miktarı (€)', 100, 1000000, 1000, step=100, help="Talep edilen kredi miktarı")
+duration = st.sidebar.slider('Kredi Süresi (ay)', 1, 100, 12, help="Kredi geri ödeme süresi ay cinsinden")
 
-sex_label = st.sidebar.selectbox('Cinsiyet', options=le_sex.classes_)
-housing_label = st.sidebar.selectbox('Konut Durumu', options=le_housing.classes_)
-saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classes_)
-checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_)
-purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_)
+sex_label = st.sidebar.selectbox('Cinsiyet', options=le_sex.classes_, help="Başvuru sahibinin cinsiyeti")
+housing_label = st.sidebar.selectbox('Konut Durumu', options=le_housing.classes_, help="Başvuru sahibinin konut durumu")
+saving_label = st.sidebar.selectbox('Tasarruf Hesabı', options=le_saving.classes_, help="Başvuru sahibinin tasarruf hesabı durumu")
+checking_label = st.sidebar.selectbox('Vadesiz Hesap', options=le_checking.classes_, help="Başvuru sahibinin vadesiz hesap durumu")
+purpose_label = st.sidebar.selectbox('Kredi Amacı', options=le_purpose.classes_, help="Kredi talep sebebi")
 
-# Encode et
 sex_encoded = le_sex.transform([sex_label])[0]
 housing_encoded = le_housing.transform([housing_label])[0]
 saving_encoded = le_saving.transform([saving_label])[0]
 checking_encoded = le_checking.transform([checking_label])[0]
 purpose_encoded = le_purpose.transform([purpose_label])[0]
 
-# Tahmin butonu
 if st.sidebar.button('Tahmin Et'):
     input_dict = {
         'Age': age,
@@ -107,11 +99,7 @@ if st.sidebar.button('Tahmin Et'):
         'Purpose_encoded': purpose_encoded
     }
     input_df = pd.DataFrame([input_dict])
-
-    # Ölçeklendir
     input_df[['Age', 'Credit amount', 'Duration']] = scaler.transform(input_df[['Age', 'Credit amount', 'Duration']])
-
-    # Tahmin
     pred = model.predict(input_df[feature_cols])[0]
     proba = model.predict_proba(input_df[feature_cols])[0][pred]
 
@@ -119,36 +107,27 @@ if st.sidebar.button('Tahmin Et'):
     st.markdown(f"### Tahmin Sonucu: {risk_map[pred]}")
     st.write(f"Model Güven Skoru: **{proba:.2f}**")
 
-# Veri Keşfi (EDA) bölümü
 with st.expander("📊 Veri Seti Keşfi ve İstatistikler", expanded=True):
-    st.markdown("### Sayısal Değişkenlerin Dağılımı")
+    st.markdown("### Sayısal Değişkenlerin Dağılımı ve Özet İstatistikleri")
     numeric_cols = ['Age', 'Credit amount', 'Duration']
     col1, col2, col3 = st.columns(3)
-    with col1:
-        fig, ax = plt.subplots()
-        sns.histplot(df['Age'], kde=True, color='#6c5ce7', ax=ax)
-        ax.set_title("Yaş Dağılımı")
-        st.pyplot(fig)
-    with col2:
-        fig, ax = plt.subplots()
-        sns.histplot(df['Credit amount'], kde=True, color='#6c5ce7', ax=ax)
-        ax.set_title("Kredi Miktarı Dağılımı")
-        st.pyplot(fig)
-    with col3:
-        fig, ax = plt.subplots()
-        sns.histplot(df['Duration'], kde=True, color='#6c5ce7', ax=ax)
-        ax.set_title("Kredi Süresi Dağılımı")
-        st.pyplot(fig)
+    for col, c in zip(numeric_cols, [col1, col2, col3]):
+        with c:
+            fig, ax = plt.subplots()
+            sns.histplot(df[col], kde=True, color='#6c5ce7', ax=ax)
+            ax.set_title(f"{col} Dağılımı")
+            st.pyplot(fig)
+            st.write(df[col].describe())
 
     st.markdown("### Kategorik Değişkenlerin Dağılımı")
     cat_cols = ['Sex', 'Housing', 'Saving accounts', 'Checking account', 'Purpose']
     for col in cat_cols:
         fig, ax = plt.subplots()
-        df[col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax, startangle=90, colors=sns.color_palette("viridis"))
-        ax.set_ylabel('')
+        sns.countplot(x=col, data=df, palette="viridis", ax=ax)
         ax.set_title(f"{col} Dağılımı")
+        ax.set_xlabel("")
+        ax.set_ylabel("Sayı")
         st.pyplot(fig)
 
-# Footer
 st.markdown("---")
 st.caption("Created by Yasin Aslan | Powered by Streamlit & Scikit-learn")
