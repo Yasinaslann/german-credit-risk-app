@@ -159,6 +159,19 @@ if st.sidebar.button('Tahmin Et'):
     st.markdown(f"### Tahmin Sonucu: {risk_map[pred]}")
     st.write(f"Model Güven Skoru: **{proba:.2f}**")
 
+    
+    st.markdown("---")
+    st.markdown("### 📝 Girdiğiniz Bilgilerin Özeti ve Açıklamalar")
+
+    st.write(f"**Yaş:** {age} — Kredi başvurusunda bulunan kişinin yaşı.")
+    st.write(f"**Kredi Miktarı:** {credit_amount} € — Talep edilen kredi miktarı.")
+    st.write(f"**Kredi Süresi:** {duration} ay — Kredinin geri ödeme süresi.")
+    st.write(f"**Cinsiyet:** {sex_label} — Başvuran kişinin cinsiyeti.")
+    st.write(f"**Konut Durumu:** {housing_label} — Başvuranın konut durumu (kira, kendi, aile vb).")
+    st.write(f"**Tasarruf Hesabı:** {saving_label} — Başvuranın tasarruf hesabı durumu.")
+    st.write(f"**Vadesiz Hesap:** {checking_label} — Başvuranın vadesiz hesap durumu.")
+    st.write(f"**Kredi Amacı:** {purpose_label} — Kredinin kullanım amacı.")
+
     # Olası Sebepler ve Açıklamalar
     st.markdown("#### Tahmine Etki Edebilecek Olası Sebepler ve Açıklamalar")
     explanations = []
